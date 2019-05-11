@@ -1,25 +1,107 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
-
-
+Title: "Reproducible Research: Peer Assessment 1"
 ## Loading and preprocessing the data
+Read the csv file downloaded
+
+  - Convert dates from character to date format
+  
+  - Generate the weekdays based on the date column
+  
+  - Based on the weekdays classify each day as weekend or weekday
+  
+```{r}
+ activity_raw <- read.csv("D:/Users/samipatn/Documents/repdata_data_activity/activity.csv", stringsAsFactors = FALSE)
+ activity_raw$date <- as.POSIXct(activity_raw$date , format = "%Y-%m-%d")
+ str(activity_raw)
+ activity_raw$weekday <- tolower(weekdays(activity_raw$date))
+ activity_raw$daytype <- ifelse(activity_raw$weekday=="saturday"|activity_raw$weekday=="sunday","weekend","weekday")
+ head(activity_raw,10)
+```
+
+**Calculate the total number of steps taken each day**
+```{r}
+ sum_data <- aggregate(activity_raw$steps , by= list(activity_raw$date), FUN= sum , na.rm= TRUE)
+ names(sum_data)<- c("date","totalsteps")
+```
+**Plot a histogram of total steps taken each day for the month of october and november 2012**
+```{r}
+  hist(sum_data$totalsteps, col="green",breaks = seq(from=0 , to= 25000 , by=2500 ),ylim=c(0,30),xlab= "Total no. of steps" , main = "Histogram of total no of steps taken each day")
+```
+
+
+**Calculate the mean and median of total steps taken**
+```{r}
+        mean(sum_data$totalsteps)
+        median(sum_data$totalsteps)
+        summary(sum_data)
+```
+**Calculate the average or mean activity pattern**
+```{r}
+mean_data <- aggregate(activity_raw$steps , by=list(activity_raw$interval),FUN=mean , na.rm=TRUE)
+names(mean_data)<- c("Interval","Mean.Steps")
+```
+**Plot a time series graph of average steps vs interval**
+```{r}
+plot(mean_data$Interval,mean_data$Mean.Steps,type="l",lwd=3,col="green",xlab="Interval [in minutes]" , ylab="Average no of steps",main="Time series of average number of steps per interval")
+```
+
+
+**Find the maximun steps taken**
+```{r}
+max_steps <- which(mean_data$Mean.Steps== max(mean_data$Mean.Steps))
+max_step_data <- mean_data[max_steps,1]
+max_step_data
+```
+**calculate and store the positions of missing values in the raw data set**
+```{r}
+NA_Count <- sum(is.na(activity_raw$steps))
+NA_Count
+NA_Positions <- which(is.na(activity_raw$steps))
+```
+**Fill the missing values with the average steps**
+```{r}
+mean_vec <- rep(mean(activity_raw$steps ,na.rm = TRUE) , times= length(NA_Positions))
+activity_raw[NA_Positions, "steps"] <- mean_vec
+```
+**Calculate the total steps taken each day with the NA values replaced by cacluated mean**
+```{r}
+sum_data_na_filled <- aggregate(activity_raw$steps,by=list(activity_raw$date),FUN=sum)
+str(sum_data_na_filled)
+names(sum_data_na_filled) <- c("date", "total.steps")
+str(sum_data_na_filled)
+```
+**Plot a histogram to display total steps taken each day, NA values now replaced with mean**
+```{r}
+hist(sum_data_na_filled$total.steps, col="green",breaks = seq(from=0 , to= 25000 , by=2500 ),ylim=c(0,30),xlab= "Total no. of steps" , main = "Histogram of total no of steps taken each day/NA with mean steps")
+```
+
+
+**Recalcualte the mean and median with NA's replaced**
+```{r}
+mean(sum_data_na_filled$total.steps)
+median(sum_data_na_filled$total.steps)
+```
+**Calculate the average steps taken and categorise by weekday/weekend **
+```{r}
+mean_data_na_filled_daytype <- aggregate(activity_raw$steps,by=list(activity_raw$daytype,activity_raw$weekday,activity_raw$interval), FUN=mean)
+names(mean_data_na_filled_daytype)<- c("DayType","Weekday","interval","mean.steps")
+```
+**A panel plot containing a time series plot (i.e. type = "l") of the 5- minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis)**
+```{r}
+library(ggplot2)
+g<- ggplot(data=mean_data_na_filled_daytype,aes(x=interval, y=mean.steps))
+g+geom_line(col="green")+facet_grid(mean_data_na_filled_daytype$DayType ~.)+ggtitle("Average daily activity patterns")+ xlab("Time Interval")+ylab("Average number of steps")+theme_grey()
+ ```
 
 
 
-## What is mean total number of steps taken per day?
 
 
 
-## What is the average daily activity pattern?
 
 
 
-## Imputing missing values
 
 
 
-## Are there differences in activity patterns between weekdays and weekends?
+
+
